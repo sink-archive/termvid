@@ -1,6 +1,7 @@
 package processing
 
 import (
+	"fmt"
 	"github.com/floostack/transcoder"
 	"github.com/floostack/transcoder/ffmpeg"
 	_ "github.com/floostack/transcoder/ffmpeg"
@@ -8,9 +9,12 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"strconv"
+	"strings"
+	"time"
 )
 
-func GetMeta(filePath string) transcoder.Metadata {
+func getMeta(filePath string) transcoder.Metadata {
 	ffmpegPath, ffprobePath := getBinPaths()
 	tc := ffmpeg.
 		New(&ffmpeg.Config{
@@ -26,7 +30,7 @@ func GetMeta(filePath string) transcoder.Metadata {
 	return meta
 }
 
-func FirstVideoStream(meta transcoder.Metadata) transcoder.Streams {
+func firstVideoStream(meta transcoder.Metadata) transcoder.Streams {
 	for _, stream := range meta.GetStreams() {
 		if stream.GetCodecType() == "video" {
 			return stream
@@ -36,7 +40,7 @@ func FirstVideoStream(meta transcoder.Metadata) transcoder.Streams {
 	return nil
 }
 
-func ExtractAudio(inPath string, outPath string) error {
+func extractAudio(inPath string, outPath string) error {
 	audioFormat := "wav"
 	skipVideo := true
 	opts := ffmpeg.Options{
@@ -44,7 +48,7 @@ func ExtractAudio(inPath string, outPath string) error {
 		SkipVideo:    &skipVideo,
 	}
 
-	_, err := GetTranscoder(inPath).
+	_, err := getTranscoder(inPath).
 		WithOptions(opts).
 		Output(outPath).
 		Start(opts)
@@ -55,7 +59,7 @@ func ExtractAudio(inPath string, outPath string) error {
 	return nil
 }
 
-func ExtractImages(inPath string, outDir string) error {
+func extractImages(inPath string, outDir string) error {
 	/*imgFormat := "bmp"
 	opts := ffmpeg.Options{
 		OutputFormat: &imgFormat,
@@ -66,7 +70,7 @@ func ExtractImages(inPath string, outDir string) error {
 		return err
 	}
 
-	/*_, err = GetTranscoder(inPath).
+	/*_, err = getTranscoder(inPath).
 		WithOptions(opts).
 		Output(path.Join(outDir, "%6d.bmp")).
 		Start(opts)
@@ -89,7 +93,7 @@ func ExtractImages(inPath string, outDir string) error {
 	return nil
 }
 
-func GetTranscoder(inputPath string) transcoder.Transcoder {
+func getTranscoder(inputPath string) transcoder.Transcoder {
 	ffmpegPath, ffprobePath := getBinPaths()
 
 	return ffmpeg.New(&ffmpeg.Config{
@@ -119,4 +123,56 @@ func getBinPaths() (string, string) {
 	}
 
 	return ffmpegPath, ffprobePath
+}
+
+func PreProcess(inputPath string, tempDir string) float64 {
+	startTime := time.Now()
+
+	print("Reading metadata             ")
+
+	// get metadata
+	meta := getMeta(inputPath)
+	if meta == nil {
+		return 0
+	}
+
+	// get framerate
+	frStr := firstVideoStream(meta).GetAvgFrameRate()
+	frFract := strings.Split(frStr, "/")
+	frNum, err := strconv.ParseFloat(frFract[0], 64)
+	frDen, err := strconv.ParseFloat(frFract[1], 64)
+	if err != nil {
+		return 0
+	}
+	framerate := frNum / frDen
+	if framerate == 0 {
+		return 0
+	}
+
+	metaTime := time.Since(startTime).Milliseconds()
+	fmt.Printf("Done in %sms\n", strconv.Itoa(int(metaTime)))
+
+	print("Extracting Audio             ")
+
+	audioPath := path.Join(tempDir, "audio.wav")
+	err = extractAudio(inputPath, audioPath)
+	if err != nil {
+		return 0
+	}
+
+	audtime := float64(time.Since(startTime).Milliseconds()) / 1000
+	fmt.Printf("Done in %ss\n", strconv.FormatFloat(audtime, 'f', 2, 64))
+
+	print("Splitting into images        ")
+
+	imgDir := path.Join(tempDir, "rawframes")
+	err = extractImages(inputPath, imgDir)
+	if err != nil {
+		return 0
+	}
+
+	imgtime := float64(time.Since(startTime).Milliseconds()) / 1000
+	fmt.Printf("Done in %ss", strconv.FormatFloat(imgtime, 'f', 2, 64))
+
+	return framerate
 }
