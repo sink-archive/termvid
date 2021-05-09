@@ -3,6 +3,7 @@
     <module name="termvid" />
     <working_directory value="$PROJECT_DIR$" />
     <go_parameters value="-i" />
+    <parameters value="-i &quot;$USER_HOME$/Downloads/cursordance test-eoLzwE0JRpo.mkv&quot;" />
     <kind value="PACKAGE" />
     <package value="github.com/yellowsink/termvid" />
     <directory value="$PROJECT_DIR$" />

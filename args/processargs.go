@@ -8,62 +8,60 @@ import (
 func ProcessArgs() Args {
 	processed := Args{}
 
-	for i := range os.Args {
-		switch os.Args[i] {
-		case "-i":
-		case "--input":
-			processed.InputPath = os.Args[i+1]
-			i++
-			break
+	rawArgs := os.Args[1:]
 
-		case "-t":
-		case "--temp":
-			processed.TempFolderPath = os.Args[i+1]
+	for i, arg := range rawArgs {
+		switch arg {
+		case "-i", "--input":
+			processed.InputPath = rawArgs[i+1]
 			i++
-			break
 
-		case "-h":
-		case "--height":
+		case "-t", "--temp":
+			processed.TempFolderPath = rawArgs[i+1]
+			i++
+
+		case "-h", "--height":
 			var err error
-			processed.Height, err = strconv.Atoi(os.Args[i+1])
+			processed.Height, err = strconv.Atoi(rawArgs[i+1])
 			if err != nil {
 				println("Invalid height value")
 				os.Exit(1)
 			}
 			i++
-			break
 
-		case "-w":
-		case "--width":
+		case "-w", "--width":
 			var err error
-			processed.Width, err = strconv.Atoi(os.Args[i+1])
+			processed.Width, err = strconv.Atoi(rawArgs[i+1])
 			if err != nil {
 				println("Invalid width value")
 				os.Exit(1)
 			}
 			i++
-			break
 
-		case "-s":
-		case "--asciiSave":
-			processed.AsciiSavePath = os.Args[i+1]
+		case "-s", "--asciiSave":
+			processed.AsciiSavePath = rawArgs[i+1]
 			i++
-			break
 
-		case "-a":
-		case "--savedFrames":
+		case "-a", "--savedFrames":
 			processed.UseSavedFrames = true
-			break
 
-		case "-v":
-		case "--viu":
+		case "-v", "--viu":
 			processed.UseViu = true
-			break
 		}
 	}
 
 	if len(processed.InputPath) == 0 {
 		println("Please supply an input file with -i")
+		os.Exit(1)
+	}
+
+	if processed.UseViu && processed.UseSavedFrames {
+		println("Cannot use viu and read saved frames together")
+		os.Exit(1)
+	}
+
+	if processed.UseViu && len(processed.AsciiSavePath) != 0 {
+		println("Cannot use viu and save frames together")
 		os.Exit(1)
 	}
 
