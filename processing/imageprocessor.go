@@ -2,48 +2,38 @@ package processing
 
 import (
 	"fmt"
-	"image"
-	"image/draw"
-	_ "image/draw"
-	_ "image/jpeg"
+	"gopkg.in/gographics/imagick.v3/imagick"
 	"math"
-	"os"
 	"strconv"
 	"time"
 )
 
 func imgToAscii(filePath string, width int, height int) string {
-	file, err := os.Open(filePath)
+	mw := imagick.NewMagickWand()
+	defer mw.Destroy()
+	err := mw.ReadImage(filePath)
 	if err != nil {
 		return ""
 	}
-	defer func(file *os.File) {
-		err := file.Close()
+	filter := imagick.FILTER_POINT
+	if mw.GetImageWidth() != uint(width) || mw.GetImageHeight() != uint(height) {
+		err := mw.ResizeImage(uint(width), uint(height), filter)
 		if err != nil {
-
+			return ""
 		}
-	}(file)
-	img, _, err := image.Decode(file)
-	if err != nil {
-		return ""
 	}
+
+	iterator := mw.NewPixelIterator()
 
 	frame := ""
 
-	rect := img.Bounds()
-	rgba := image.NewRGBA(rect)
-	draw.Draw(rgba, rect, img, rect.Min, draw.Src)
-
-	pixels := rgba.Pix
-	stride := rgba.Stride
-	min := rect.Min
-
 	for y := 0; y < height; y += 2 {
+		topRow := iterator.GetNextIteratorRow()
+		btmRow := iterator.GetNextIteratorRow()
+
 		for x := 0; x < width; x++ {
-			topStart := (y-min.Y)*stride + (x-min.X)*4
-			btmStart := (y+1-min.Y)*stride + (x-min.X)*4
-			topR, topG, topB := pixels[topStart], pixels[topStart+1], pixels[topStart+2]
-			btmR, btmG, btmB := pixels[btmStart], pixels[btmStart+1], pixels[btmStart+2]
+			topR, topG, topB := topRow[x].GetRed(), topRow[x].GetGreen(), topRow[x].GetBlue()
+			btmR, btmG, btmB := btmRow[x].GetRed(), btmRow[x].GetGreen(), btmRow[x].GetBlue()
 
 			frame += "\u001b[38;2;" +
 				strconv.Itoa(int(topR)) +
@@ -97,3 +87,6 @@ func BatchToAscii(filePaths []string, width int, height int) []string {
 		"s")
 	return working
 }
+
+func MagickInit() { imagick.Initialize() }
+func MagickEnd()  { imagick.Terminate() }

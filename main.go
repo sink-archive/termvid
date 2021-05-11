@@ -9,6 +9,9 @@ import (
 )
 
 func main() {
+	processing.MagickInit()
+	defer processing.MagickEnd()
+
 	args := arg.ProcessArgs()
 
 	tempDir := args.TempFolderPath
