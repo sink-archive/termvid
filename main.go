@@ -31,9 +31,21 @@ func main() {
 	var framerate float64
 
 	if !args.UseSavedFrames {
-		framerate = processing.PreProcess(args.InputPath, tempDir)
+		framerate = processing.PreProcess(args.InputPath, tempDir, args.Width, args.Height)
 		audioPath = path.Join(tempDir, "audio.wav")
 	}
+
+	dir, err := os.Open(path.Join(tempDir, "rawframes"))
+	if err != nil {
+		return
+	}
+	files, err := dir.ReadDir(0)
+	var filePaths []string
+	for _, file := range files {
+		filePaths = append(filePaths, path.Join(path.Join(tempDir, "rawframes"), file.Name()))
+	}
+
+	processing.BatchToAscii(filePaths, args.Width, args.Height)
 
 	// oh my god why does this lang not allow unused vars
 	_, _, _ = frames, audioPath, framerate

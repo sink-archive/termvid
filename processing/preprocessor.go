@@ -59,7 +59,7 @@ func extractAudio(inPath string, outPath string) error {
 	return nil
 }
 
-func extractImages(inPath string, outDir string) error {
+func extractImages(inPath string, outDir string, width int, height int) error {
 	/*imgFormat := "bmp"
 	opts := ffmpeg.Options{
 		OutputFormat: &imgFormat,
@@ -83,7 +83,9 @@ func extractImages(inPath string, outDir string) error {
 		"ffmpeg",
 		"-i",
 		inPath,
-		path.Join(outDir, "%6d.bmp"))
+		"-s",
+		strconv.Itoa(width)+"x"+strconv.Itoa(height),
+		path.Join(outDir, "%6d.jpg"))
 
 	err = cmd.Run()
 	if err != nil {
@@ -125,7 +127,7 @@ func getBinPaths() (string, string) {
 	return ffmpegPath, ffprobePath
 }
 
-func PreProcess(inputPath string, tempDir string) float64 {
+func PreProcess(inputPath string, tempDir string, width int, height int) float64 {
 	startTime := time.Now()
 
 	print("Reading metadata             ")
@@ -166,13 +168,13 @@ func PreProcess(inputPath string, tempDir string) float64 {
 	print("Splitting into images        ")
 
 	imgDir := path.Join(tempDir, "rawframes")
-	err = extractImages(inputPath, imgDir)
+	err = extractImages(inputPath, imgDir, width, height)
 	if err != nil {
 		return 0
 	}
 
 	imgtime := float64(time.Since(startTime).Milliseconds()) / 1000
-	fmt.Printf("Done in %ss", strconv.FormatFloat(imgtime, 'f', 2, 64))
+	fmt.Printf("Done in %ss\n", strconv.FormatFloat(imgtime, 'f', 2, 64))
 
 	return framerate
 }

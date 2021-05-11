@@ -6,7 +6,12 @@ import (
 )
 
 func ProcessArgs() Args {
-	processed := Args{}
+	processed := Args{
+		Width:          128,
+		Height:         72,
+		UseViu:         false,
+		UseSavedFrames: false,
+	}
 
 	rawArgs := os.Args[1:]
 
