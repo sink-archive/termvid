@@ -1,6 +1,9 @@
 package main
 
 import (
+	"github.com/faiface/beep"
+	"github.com/faiface/beep/speaker"
+	"github.com/faiface/beep/wav"
 	arg "github.com/yellowsink/termvid/args"
 	"github.com/yellowsink/termvid/player"
 	"github.com/yellowsink/termvid/processing"
@@ -8,6 +11,7 @@ import (
 	"os"
 	"path"
 	"sort"
+	"time"
 )
 
 func main() {
@@ -44,12 +48,24 @@ func main() {
 
 	frames = processing.BatchToAscii(filePaths, args.Width, args.Height)
 
+	streamer, format, err := getStreamer(audioPath)
+	if err != nil {
+		return
+	}
+	audioDoneChan, err := playAudio(streamer, format)
+	if err != nil {
+		return
+	}
+
 	player.PlayAscii(frames, framerate)
 
-	// oh my god why does this lang not allow unused vars
-	_ = audioPath
-
 	err = os.RemoveAll(tempDir)
+	if err != nil {
+		return
+	}
+
+	<-audioDoneChan        // wait for audio to finish
+	err = streamer.Close() // close the streamer now were done with it
 	if err != nil {
 		return
 	}
@@ -72,4 +88,31 @@ func prepareTempDir(args arg.Args) (string, error) {
 	}
 
 	return tempDir, nil
+}
+
+func playAudio(streamer beep.Streamer, format beep.Format) (chan bool, error) {
+	err := speaker.Init(format.SampleRate, format.SampleRate.N(time.Second/10))
+	if err != nil {
+		return nil, err
+	}
+
+	done := make(chan bool)
+	speaker.Play(beep.Seq(streamer, beep.Callback(func() {
+		done <- true
+	})))
+
+	return done, nil
+}
+
+func getStreamer(audioPath string) (beep.StreamSeekCloser, beep.Format, error) {
+	audioF, err := os.Open(audioPath)
+	if err != nil {
+		return nil, beep.Format{}, err
+	}
+	streamer, format, err := wav.Decode(audioF)
+	if err != nil {
+		return nil, beep.Format{}, err
+	}
+
+	return streamer, format, nil
 }
