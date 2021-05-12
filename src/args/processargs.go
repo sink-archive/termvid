@@ -1,6 +1,7 @@
 package args
 
 import (
+	"fmt"
 	"os"
 	"strconv"
 )
@@ -15,8 +16,14 @@ func ProcessArgs() Args {
 
 	rawArgs := os.Args[1:]
 
+	if len(rawArgs) == 0 {
+		help()
+	}
+
 	for i, arg := range rawArgs {
 		switch arg {
+		case "--help":
+			help()
 		case "-i", "--input":
 			processed.InputPath = rawArgs[i+1]
 			i++
@@ -71,4 +78,17 @@ func ProcessArgs() Args {
 	}
 
 	return processed
+}
+
+func help() {
+	fmt.Println("TermVid by Cain Atkinson (Yellowsink)\nLicensed under GPL-3.0-or-later\n\n" +
+		"   --help        This screen\n" +
+		"-i --input       Provide an input file\n" +
+		"-t --temp        Choose a custom temp folder\n" +
+		"-h --height      Provide a custom height for the image\n" +
+		"-w --width       Provide a custom width for the image\n" +
+		"-s --asciiSave   Save to a file for later playback\n" +
+		"-a --savedFrames Use saved frames from -s\n" +
+		"-v --viu         Display frames with viu")
+	os.Exit(0)
 }

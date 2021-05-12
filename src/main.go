@@ -48,27 +48,7 @@ func main() {
 
 	frames = processing.BatchToAscii(filePaths, args.Width, args.Height)
 
-	streamer, format, err := getStreamer(audioPath)
-	if err != nil {
-		return
-	}
-	audioDoneChan, err := playAudio(streamer, format)
-	if err != nil {
-		return
-	}
-
-	player.PlayAscii(frames, framerate)
-
-	err = os.RemoveAll(tempDir)
-	if err != nil {
-		return
-	}
-
-	<-audioDoneChan        // wait for audio to finish
-	err = streamer.Close() // close the streamer now were done with it
-	if err != nil {
-		return
-	}
+	play(frames, framerate, audioPath, tempDir)
 }
 
 func prepareTempDir(args arg.Args) (string, error) {
@@ -115,4 +95,28 @@ func getStreamer(audioPath string) (beep.StreamSeekCloser, beep.Format, error) {
 	}
 
 	return streamer, format, nil
+}
+
+func play(frames []string, framerate float64, audioPath string, tempDir string) {
+	streamer, format, err := getStreamer(audioPath)
+	if err != nil {
+		return
+	}
+	audioDoneChan, err := playAudio(streamer, format)
+	if err != nil {
+		return
+	}
+
+	player.PlayAscii(frames, framerate)
+
+	err = os.RemoveAll(tempDir)
+	if err != nil {
+		return
+	}
+
+	<-audioDoneChan        // wait for audio to finish
+	err = streamer.Close() // close the streamer now were done with it
+	if err != nil {
+		return
+	}
 }
