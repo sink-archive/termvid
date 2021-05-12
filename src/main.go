@@ -2,10 +2,12 @@ package main
 
 import (
 	arg "github.com/yellowsink/termvid/args"
+	"github.com/yellowsink/termvid/player"
 	"github.com/yellowsink/termvid/processing"
 	"io/fs"
 	"os"
 	"path"
+	"sort"
 )
 
 func main() {
@@ -14,17 +16,7 @@ func main() {
 
 	args := arg.ProcessArgs()
 
-	tempDir := args.TempFolderPath
-	if len(tempDir) == 0 {
-		tempDir = path.Join(os.TempDir(), "termvid")
-	}
-
-	err := os.RemoveAll(tempDir)
-	if err != nil {
-		return
-	}
-
-	err = os.Mkdir(tempDir, os.ModeDir|fs.ModePerm)
+	tempDir, err := prepareTempDir(args)
 	if err != nil {
 		return
 	}
@@ -48,13 +40,36 @@ func main() {
 		filePaths = append(filePaths, path.Join(path.Join(tempDir, "rawframes"), file.Name()))
 	}
 
-	processing.BatchToAscii(filePaths, args.Width, args.Height)
+	sort.Strings(filePaths)
+
+	frames = processing.BatchToAscii(filePaths, args.Width, args.Height)
+
+	player.PlayAscii(frames, framerate)
 
 	// oh my god why does this lang not allow unused vars
-	_, _, _ = frames, audioPath, framerate
+	_ = audioPath
 
 	err = os.RemoveAll(tempDir)
 	if err != nil {
 		return
 	}
+}
+
+func prepareTempDir(args arg.Args) (string, error) {
+	tempDir := args.TempFolderPath
+	if len(tempDir) == 0 {
+		tempDir = path.Join(os.TempDir(), "termvid")
+	}
+
+	err := os.RemoveAll(tempDir)
+	if err != nil {
+		return "", err
+	}
+
+	err = os.Mkdir(tempDir, os.ModeDir|fs.ModePerm)
+	if err != nil {
+		return "", err
+	}
+
+	return tempDir, nil
 }

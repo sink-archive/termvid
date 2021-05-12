@@ -35,6 +35,13 @@ func imgToAscii(filePath string, width int, height int) string {
 			topR, topG, topB := topRow[x].GetRed(), topRow[x].GetGreen(), topRow[x].GetBlue()
 			btmR, btmG, btmB := btmRow[x].GetRed(), btmRow[x].GetGreen(), btmRow[x].GetBlue()
 
+			topR *= 255
+			topG *= 255
+			topB *= 255
+			btmR *= 255
+			btmG *= 255
+			btmB *= 255
+
 			frame += "\u001b[38;2;" +
 				strconv.Itoa(int(topR)) +
 				";" +

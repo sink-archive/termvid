@@ -1,9 +1,9 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="go build github.com/yellowsink/termvid" type="GoApplicationRunConfiguration" factoryName="Go Application" nameIsGenerated="true">
     <module name="termvid" />
-    <working_directory value="$PROJECT_DIR$" />
+    <working_directory value="$PROJECT_DIR$/src" />
     <go_parameters value="-i" />
-    <parameters value="-i &quot;$USER_HOME$/Downloads/cursordance test-eoLzwE0JRpo.mkv&quot;" />
+    <parameters value="-i &quot;$USER_HOME$/Videos/compile.mp4&quot;" />
     <kind value="PACKAGE" />
     <package value="github.com/yellowsink/termvid" />
     <directory value="$PROJECT_DIR$" />
