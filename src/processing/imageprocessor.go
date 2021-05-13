@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"gopkg.in/gographics/imagick.v3/imagick"
 	"math"
+	"sort"
 	"strconv"
+	"sync"
 	"time"
 )
 
@@ -69,22 +71,38 @@ func BatchToAscii(filePaths []string, width int, height int) []string {
 	padAmount := len(strconv.Itoa(len(filePaths)))
 
 	print("Converting to ASCII art      ")
-	var working []string
-	for i, file := range filePaths {
-		working = append(working, imgToAscii(file, width, height))
+	//var working []string
+	var working []struct {
+		int
+		string
+	}
 
-		if i%10 == 0 {
+	waitingGroup := sync.WaitGroup{}
+	waitingGroup.Add(len(filePaths))
+
+	for i, file := range filePaths {
+		// create a goroutine for every single image cause that won't go wrong
+		go func(i int, f string) {
+			ascii := imgToAscii(f, width, height)
+			working = append(working, struct {
+				int
+				string
+			}{i, ascii})
 			// progress
 			fmt.Printf("%0"+strconv.Itoa(padAmount)+"d / %d [%3d%%]",
-				i,
+				len(working),
 				len(filePaths),
-				100*i/len(filePaths))
+				100*len(working)/len(filePaths))
 			// move back
 			moveBack := 10 + padAmount*2
 			//print("\033[0;0H")
 			print("\033[" + strconv.Itoa(moveBack) + "D")
-		}
+
+			waitingGroup.Done()
+		}(i, file)
 	}
+
+	waitingGroup.Wait()
 
 	timeTaken := time.Since(startTime)
 	println("Done in " +
@@ -92,7 +110,17 @@ func BatchToAscii(filePaths []string, width int, height int) []string {
 		"m " +
 		strconv.FormatFloat(timeTaken.Seconds(), 'f', 2, 64) +
 		"s")
-	return working
+
+	sort.SliceStable(working, func(i, j int) bool {
+		return working[i].int < working[j].int
+	})
+
+	var framesSorted []string
+	for _, frame := range working {
+		framesSorted = append(framesSorted, frame.string)
+	}
+
+	return framesSorted
 }
 
 func MagickInit() { imagick.Initialize() }
