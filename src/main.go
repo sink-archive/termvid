@@ -11,6 +11,7 @@ import (
 	"os"
 	"path"
 	"sort"
+	"strconv"
 	"time"
 )
 
@@ -44,7 +45,12 @@ func main() {
 		filePaths = append(filePaths, path.Join(path.Join(tempDir, "rawframes"), file.Name()))
 	}
 
-	sort.Strings(filePaths)
+	sort.SliceStable(filePaths, func(i, j int) bool {
+		path1, path2 := filePaths[i], filePaths[j]
+		parsed1, _ := strconv.Atoi(path1[:len(path1)-5])
+		parsed2, _ := strconv.Atoi(path2[:len(path2)-5])
+		return parsed1 < parsed2
+	})
 
 	frames = processing.BatchToAscii(filePaths, args.Width, args.Height)
 

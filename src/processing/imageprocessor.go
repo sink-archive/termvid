@@ -77,32 +77,38 @@ func BatchToAscii(filePaths []string, width int, height int) []string {
 		string
 	}
 
-	waitingGroup := sync.WaitGroup{}
-	waitingGroup.Add(len(filePaths))
+	// create a goroutine for every 100 images
+	for i := 0; i < len(filePaths); i += 100 {
 
-	for i, file := range filePaths {
-		// create a goroutine for every single image cause that won't go wrong
-		go func(i int, f string) {
-			ascii := imgToAscii(f, width, height)
-			working = append(working, struct {
-				int
-				string
-			}{i, ascii})
-			// progress
-			fmt.Printf("%0"+strconv.Itoa(padAmount)+"d / %d [%3d%%]",
-				len(working),
-				len(filePaths),
-				100*len(working)/len(filePaths))
-			// move back
-			moveBack := 10 + padAmount*2
-			//print("\033[0;0H")
-			print("\033[" + strconv.Itoa(moveBack) + "D")
+		waitingGroup := sync.WaitGroup{}
+		waitingGroup.Add(int(math.Min(100, float64(len(filePaths)-i))))
 
-			waitingGroup.Done()
-		}(i, file)
+		end := int(math.Min(float64(i+100), float64(len(filePaths))))
+
+		for i, file := range filePaths[i:end] {
+			go func(i int, f string) {
+				ascii := imgToAscii(f, width, height)
+				working = append(working, struct {
+					int
+					string
+				}{i, ascii})
+				// progress
+				fmt.Printf("%0"+strconv.Itoa(padAmount)+"d / %d [%3d%%]",
+					len(working),
+					len(filePaths),
+					100*len(working)/len(filePaths))
+				// move back
+				moveBack := 10 + padAmount*2
+				//print("\033[0;0H")
+				print("\033[" + strconv.Itoa(moveBack) + "D")
+
+				waitingGroup.Done()
+			}(i, file)
+		}
+
+		waitingGroup.Wait()
+
 	}
-
-	waitingGroup.Wait()
 
 	timeTaken := time.Since(startTime)
 	println("Done in " +
