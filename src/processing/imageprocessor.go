@@ -85,13 +85,13 @@ func BatchToAscii(filePaths []string, width int, height int) []string {
 
 		end := int(math.Min(float64(i+100), float64(len(filePaths))))
 
-		for i, file := range filePaths[i:end] {
-			go func(i int, f string) {
+		for j, file := range filePaths[i:end] {
+			go func(k int, f string) {
 				ascii := imgToAscii(f, width, height)
 				working = append(working, struct {
 					int
 					string
-				}{i, ascii})
+				}{k, ascii})
 				// progress
 				fmt.Printf("%0"+strconv.Itoa(padAmount)+"d / %d [%3d%%]",
 					len(working),
@@ -103,7 +103,7 @@ func BatchToAscii(filePaths []string, width int, height int) []string {
 				print("\033[" + strconv.Itoa(moveBack) + "D")
 
 				waitingGroup.Done()
-			}(i, file)
+			}(i+j, file)
 		}
 
 		waitingGroup.Wait()
