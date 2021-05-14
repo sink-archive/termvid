@@ -5,6 +5,7 @@ import (
 	"github.com/faiface/beep/speaker"
 	"github.com/faiface/beep/wav"
 	arg "github.com/yellowsink/termvid/args"
+	"github.com/yellowsink/termvid/frameio"
 	"github.com/yellowsink/termvid/player"
 	"github.com/yellowsink/termvid/processing"
 	"io/fs"
@@ -31,10 +32,13 @@ func main() {
 	var audioPath string
 	var framerate float64
 
-	if !args.UseSavedFrames {
-		framerate = processing.PreProcess(args.InputPath, tempDir, args.Width, args.Height)
-		audioPath = path.Join(tempDir, "audio.wav")
+	if args.UseSavedFrames {
+		playSaved(args, audioPath, tempDir)
+		return
 	}
+
+	framerate = processing.PreProcess(args.InputPath, tempDir, args.Width, args.Height)
+	audioPath = path.Join(tempDir, "audio.wav")
 
 	dir, err := os.Open(path.Join(tempDir, "rawframes"))
 	if err != nil {
@@ -49,16 +53,46 @@ func main() {
 	sort.SliceStable(filePaths, func(i, j int) bool {
 		split1 := strings.Split(filePaths[i], "/")
 		split2 := strings.Split(filePaths[j], "/")
-		path1 := split1[len(split1) -  1]
-		path2 := split2[len(split2) -  1]
-		parsed1, _ := strconv.Atoi(path1[:len(path1) - 4])
-		parsed2, _ := strconv.Atoi(path2[:len(path2) - 4])
+		path1 := split1[len(split1)-1]
+		path2 := split2[len(split2)-1]
+		parsed1, _ := strconv.Atoi(path1[:len(path1)-4])
+		parsed2, _ := strconv.Atoi(path2[:len(path2)-4])
 		return parsed1 < parsed2
 	})
 
 	frames = processing.BatchToAscii(filePaths, args.Width, args.Height)
 
+	if len(args.AsciiSavePath) != 0 {
+		save(args, audioPath, frames, framerate)
+	} else {
+		play(frames, framerate, audioPath, tempDir)
+	}
+}
+
+func playSaved(args arg.Args, audioPath string, tempDir string) {
+	savedFrames, err := frameio.LoadFrames(args.InputPath)
+	if err != nil {
+		return
+	}
+	frames, audio, framerate := savedFrames.Frames, savedFrames.AudioWav, savedFrames.Framerate
+
+	audioPath = path.Join(tempDir, "audio.wav")
+	os.WriteFile(audioPath, audio, 0644)
+
 	play(frames, framerate, audioPath, tempDir)
+}
+
+func save(args arg.Args, audioPath string, frames []string, framerate float64) {
+	audio, err := os.ReadFile(audioPath)
+	if err != nil {
+		return
+	}
+	savedFrames := frameio.SavedFrames{
+		Frames:    frames,
+		Framerate: framerate,
+		AudioWav:  audio,
+	}
+	frameio.SaveFrames(savedFrames, args.AsciiSavePath)
 }
 
 func prepareTempDir(args arg.Args) (string, error) {
