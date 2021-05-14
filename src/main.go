@@ -12,6 +12,7 @@ import (
 	"path"
 	"sort"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -46,9 +47,12 @@ func main() {
 	}
 
 	sort.SliceStable(filePaths, func(i, j int) bool {
-		path1, path2 := filePaths[i], filePaths[j]
-		parsed1, _ := strconv.Atoi(path1[:len(path1)-5])
-		parsed2, _ := strconv.Atoi(path2[:len(path2)-5])
+		split1 := strings.Split(filePaths[i], "/")
+		split2 := strings.Split(filePaths[j], "/")
+		path1 := split1[len(split1) -  1]
+		path2 := split2[len(split2) -  1]
+		parsed1, _ := strconv.Atoi(path1[:len(path1) - 4])
+		parsed2, _ := strconv.Atoi(path2[:len(path2) - 4])
 		return parsed1 < parsed2
 	})
 
