@@ -17,7 +17,7 @@ func playGeneric(iterator []string, renderFunc func(string), framerate float64) 
 		renderFunc(item)
 
 		// measure time rendering took
-		renderTime := float64(time.Since(startTime).Nanoseconds()) / 1000000
+		renderTime := float64(time.Since(startTime).Nanoseconds())
 		// amount of time we need to compensate
 		makeupTarget := renderTime + timeDebt
 		// timedebt is made up for, clear it
@@ -31,7 +31,11 @@ func playGeneric(iterator []string, renderFunc func(string), framerate float64) 
 
 		toWait := frameTime - correction
 
-		duration := time.Duration(int64(toWait * 1000000))
+		// latency we can't wait for because its too short
+		waitInt := math.Floor(toWait)
+		timeDebt += toWait - waitInt
+
+		duration := time.Duration(int64(waitInt))
 		time.Sleep(duration)
 	}
 }

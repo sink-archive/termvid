@@ -27,7 +27,7 @@ func SaveFrames(frames SavedFrames, path string) error {
 	if err != nil {
 		return err
 	}
-	err = ioutil.WriteFile(path, packed, 644)
+	err = ioutil.WriteFile(path, packed, 0644)
 	if err != nil {
 		return err
 	}
