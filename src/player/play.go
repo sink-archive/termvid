@@ -17,7 +17,7 @@ func playGeneric(iterator []string, renderFunc func(string), framerate float64) 
 		renderFunc(item)
 
 		// measure time rendering took
-		renderTime := float64(time.Since(startTime).Nanoseconds()) * 1000000
+		renderTime := float64(time.Since(startTime).Nanoseconds()) / 1000000
 		// amount of time we need to compensate
 		makeupTarget := renderTime + timeDebt
 		// timedebt is made up for, clear it
@@ -29,7 +29,9 @@ func playGeneric(iterator []string, renderFunc func(string), framerate float64) 
 			timeDebt += makeupTarget - frameTime
 		}
 
-		duration := time.Duration(int64(correction * 1000000))
+		toWait := frameTime - correction
+
+		duration := time.Duration(int64(toWait * 1000000))
 		time.Sleep(duration)
 	}
 }
