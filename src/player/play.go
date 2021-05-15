@@ -7,8 +7,12 @@ import (
 )
 
 func playGeneric(iterator []string, renderFunc func(string), framerate float64) {
-	frameTime := 1000 / framerate
+	frameTime := 1_000_000 * 1000 / framerate
 	timeDebt := 0.0
+
+	// create these now and keep them between frames so that garbage collection isn't an issue
+	var renderTime, makeupTarget, correction, toWait, waitInt float64
+	var duration time.Duration
 
 	for _, item := range iterator {
 		startTime := time.Now()
@@ -17,25 +21,25 @@ func playGeneric(iterator []string, renderFunc func(string), framerate float64) 
 		renderFunc(item)
 
 		// measure time rendering took
-		renderTime := float64(time.Since(startTime).Nanoseconds())
+		renderTime = float64(time.Since(startTime).Nanoseconds())
 		// amount of time we need to compensate
-		makeupTarget := renderTime + timeDebt
+		makeupTarget = renderTime + timeDebt
 		// timedebt is made up for, clear it
 		timeDebt = 0
 		// max possible correction
-		correction := math.Min(makeupTarget, frameTime)
+		correction = math.Min(makeupTarget, frameTime)
 		// if cant make up now, try later
 		if makeupTarget > frameTime {
 			timeDebt += makeupTarget - frameTime
 		}
 
-		toWait := frameTime - correction
+		toWait = frameTime - correction
 
 		// latency we can't wait for because its too short
-		waitInt := math.Floor(toWait)
+		waitInt = math.Floor(toWait)
 		timeDebt += toWait - waitInt
 
-		duration := time.Duration(int64(waitInt))
+		duration = time.Duration(int64(waitInt))
 		time.Sleep(duration)
 	}
 }
