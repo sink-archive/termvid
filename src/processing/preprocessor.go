@@ -85,7 +85,9 @@ func extractImages(inPath string, outDir string, width int, height int) error {
 		inPath,
 		"-s",
 		strconv.Itoa(width)+"x"+strconv.Itoa(height),
-		path.Join(outDir, "%6d.jpg"))
+		/*"-q:v",
+		"1",*/
+		path.Join(outDir, "%6d.png"))
 
 	err = cmd.Run()
 	if err != nil {
